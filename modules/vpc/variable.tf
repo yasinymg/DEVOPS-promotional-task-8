@@ -1,11 +1,17 @@
-variable "cidr_block" {
+variable "vpc_cidr" {
   description = "The CIDR block for the VPC"
   type        = string
-  default     = "10.0.0.0/16"  
+  default     = "10.0.0.0/16"
 }
 
-variable "name" {
-  description = "The name of the VPC"
+variable "vpc_name" {
+  description = "Name of the VPC"
   type        = string
-  default     = "KCVPC" 
+}
+
+
+variable "availability_zone" {
+  description = "The description of the availability zone"
+  type        = string
+  default     = "eu-west-1a"
 }

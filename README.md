@@ -1,132 +1,120 @@
-# Minikube Deployment with GitHub Actions and Terraform
+# Deliverables
 
-This repository contains the code, Docker configurations, Terraform modules, and GitHub Actions workflows necessary to deploy an application to a Minikube cluster running on an EC2 instance using Terraform.
+## 1. Documentations of your processes
 
-## Table of Contents
+#### Step 1: Prepared the Code Repository
+- Created a new [repository](https://github.com/yasinymg/DEVOPS-promotional-task-8.git) on GitHub and pushed application code.
+- Added [application](./main.py) code to the repository. 
+- Added a [Dockerfile](./Dockerfile) for the application, to containerize it
+- Pushed image to Docker image registry using GitHub Actions
+```yml
+- name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
 
-- [Overview](#overview)
-- [Prerequisites](#prerequisites)
-- [Setup Instructions](#setup-instructions)
-  - [Step 1: Prepare the Code Repository](#step-1-prepare-the-code-repository)
-  - [Step 2: Set Up GitHub Actions](#step-2-set-up-github-actions)
-  - [Step 3: Set Up Terraform for EC2 and Minikube](#step-3-set-up-terraform-for-ec2-and-minikube)
-  - [Step 4: Access the Minikube Cluster](#step-4-access-the-minikube-cluster)
-  - [Step 5: Automate Deployment with GitHub Actions](#step-5-automate-deployment-with-github-actions)
-- [Screenshots](#screenshots)
-
-## Overview
-
-This project demonstrates a complete CI/CD pipeline that uses GitHub Actions to deploy an application from a GitHub repository to a Minikube cluster running on an EC2 instance. Terraform is used to provision the infrastructure, including the EC2 instance and the Minikube cluster.
-
-## Prerequisites
-
-- AWS account with IAM permissions to create EC2 instances and VPCs
-- GitHub account
-- Docker Hub account
-- Terraform installed locally
-- SSH key pair for EC2 access
-- Basic understanding of Kubernetes and Docker
-
-## Setup Instructions
-
-### Step 1: Prepare the Code Repository
-
-1. **Create a GitHub Repository**
-   - Create a new repository on GitHub.
-   - Clone the repository to your local machine.
-
-2. **Add Application Code**
-   - Add your application code to the repository.
-   - Ensure you have a `Dockerfile` in the root of your application directory.
-
-3. **Push Docker Image to Registry**
-   - Build and push your Docker image to Docker Hub.
-
-4. **Create Kubernetes Manifests**
-   - Add Kubernetes manifests (e.g., `deployment.yaml`, `service.yaml`) to a `k8s` directory in the repository.
-
-### Step 2: Set Up GitHub Actions
-
-1. **Create a GitHub Actions Workflow**
-   - Create a `.github/workflows/deploy.yml` file.
-   - Define the steps to build the Docker image, push it to Docker Hub, and deploy it to Minikube.
-
-   name: Deploy to Minikube
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v1
+    - name: Log in to DockerHub
+      uses: docker/login-action@v2
       with:
-        username: ${{ yasinymg }}
-        password: ${{ @Fathia39730353 }}
+        username: ${{ secrets.DOCKER_USERNAME }}        # provided in the repository secret
+        password: ${{ secrets.DOCKER_PASSWORD }}        # provided in the repository secret
 
-    - name: Build and push Docker image
+    - name: Build and Push Docker Image
       run: |
-        docker build -t yasinymg/kcapp:latest .
-        docker push yasinymg/kcapp:latest 
-
-    - name: SSH into EC2 and deploy to Minikube
-      uses: appleboy/ssh-action@v0.1.1
-      with:
-        host: ${{ secrets.EC2_PUBLIC_IP }}
-        username: ec2-user
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          kubectl apply -f k8s/deployment.yaml
-          kubectl apply -f k8s/service.yaml
-
-
-### Step 3: Set Up Terraform for EC2 and Minikube
-
-1. **Create Terraform Modules**
-   - Create Terraform modules for EC2, VPC, and other resources.
-   - Define the infrastructure in `main.tf`.
-
-2. **Initialize and Apply Terraform**
-   - Run `terraform init` and `terraform apply` to provision the infrastructure.
-
-### Step 4: Access the Minikube Cluster
-
-1. **SSH into EC2 Instance**
-   - SSH into the EC2 instance using the public IP output from Terraform.
-
-2. **Configure kubectl**
-   - Configure `kubectl` to use the Minikube cluster.
-
-### Step 5: Automate Deployment with GitHub Actions
-
-1. **Update GitHub Actions Workflow**
-   - Update the workflow to deploy your application to the Minikube cluster on the EC2 instance.
-
-
-## Screenshots
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/myapp:latest .
+        docker push ${{ secrets.DOCKER_USERNAME }}/myapp:latest
+```
 
 
 
-- EC2 instance creation and access
+#### Step 2: Set Up GitHub Actions
+- In the repository, I created a YAML file deploy.yml inside a .github/workflows directory with the required configurations [here]
 
-- Minikube cluster running
-![cluster](screenshots/pods.png)
-- Successful deployment via GitHub Actions
-![deployments](screenshots/deployments.png)
-- Application running on Minikube
-![runningapp](screenshots/application-running.png)
+#### Step 3: Set Up Terraform for EC2 and Minikube
+- Created terraform [modules](./modules/) for your [EC2](./modules/ec2/), [VPC](./modules/vpc/)
+- Created [root modules](main.tf)
+- Created an EC2 instance with [Minikube](./modules/ec2/scripts/install_minikube.sh) running on it.
+- Run the appropriate Terraform commands in your terminal. ![](screenshots/terraform-apply.png)
 
----
+#### Step 4: Access the Minikube Cluster
+- SSH into the created EC2 instance using the public IP output from Terraform. Inside the EC2 instance, I installed docker as the driver, changed my user mode for docker with the command `sudo usermod -aG docker $USER`, configured kubectl to use the Minikube cluster. Then I cloned my git repo into the instance, and applied the k8s manifests and ensured it runs perfectly. 
+
+#### Step 5: Automate Deployment with GitHub Actions
+- Update the GitHub Actions [workflow]to deploy to the Minikube cluster on the EC2 instance. Ensure the Minikube instance's IP and SSH keys are securely managed. 
+![](screenshots/pods.png.png)
+
+
+
+
+## 2. Application for Deployment
+I used Python FastAPI
+```python
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to myapp"}
+
+@app.get("/about")
+def read_about():
+    return {"about": "This is myapp."}
+```
+
+
+## 3. Terraform Modules 
+- I created EC2 module [here](./modules/ec2/)
+- I created VPC module [here](./modules/vpc/)
+- I created Root module [here](main.tf)
+
+## 4. Kubernetes Manifests
+- [deployment.yaml](./k8S/deployment.yaml) 
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+      - name: myapp
+        image: yasinymg/myapp:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        resources:
+            requests:
+                memory: "128Mi"
+                cpu: "250m"
+            limits:
+                memory: "256Mi"
+                cpu: "500m"
+```
+
+- [service.yaml](./k8S/service.yaml)
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp
+spec:
+  type: ClusterIP
+  selector:
+    app: myapp
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+```
+
+
+
 
 
