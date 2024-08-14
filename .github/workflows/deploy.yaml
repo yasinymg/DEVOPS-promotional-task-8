@@ -24,8 +24,8 @@ jobs:
 
     - name: Build and Push Docker Image
       run: |
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/adedeji-portfolio:latest .
-        docker push ${{ secrets.DOCKER_USERNAME }}/adedeji-portfolio:latest
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/myapp:latest .
+        docker push ${{ secrets.DOCKER_USERNAME }}/myapp:latest
 
     - name: SSH into EC2
       uses: appleboy/ssh-action@master
